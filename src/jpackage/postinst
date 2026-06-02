@@ -8,6 +8,7 @@ cat <<'EOF' | gzip > /usr/local/share/man/man1/nfdtonfc.1.gz
 nfdtonfc \- convert filenames from NFD to NFC Unicode normalization
 .SH SYNOPSIS
 .B nfdtonfc
+[\fB\-f\fR | \fB\-\-force\fR]
 [\fB\-\-help\fR]
 [\fB\-\-version\fR]
 \fI<file-or-directory>\fR
@@ -20,6 +21,9 @@ This is particularly useful on macOS, where the HFS+ filesystem stores filenames
 .PP
 When a directory is specified, it is processed recursively. Deepest paths are renamed first to avoid broken references caused by parent directory renames.
 .SH OPTIONS
+.TP
+.B \-f, \-\-force
+Overwrite existing files without prompting.
 .TP
 .B \-\-help
 Show a help message and exit.
