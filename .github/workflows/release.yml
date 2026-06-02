@@ -21,7 +21,7 @@ jobs:
             release-name: nfdtonfc-windows.exe
           - os: ubuntu-24.04
             artifact: nfdtonfc/bin/nfdtonfc
-            release-name: nfdtonfc-linux
+            release-name: nfdtonfc-ubuntu
 
     runs-on: ${{ matrix.os }}
 
@@ -69,6 +69,6 @@ jobs:
           files: |
             artifacts/nfdtonfc-macos/nfdtonfc-macos
             artifacts/nfdtonfc-windows.exe/nfdtonfc-windows.exe
-            artifacts/nfdtonfc-linux/nfdtonfc-linux
+            artifacts/nfdtonfc-ubuntu/nfdtonfc-ubuntu
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
