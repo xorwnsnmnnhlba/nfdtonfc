@@ -14,11 +14,14 @@ jobs:
       matrix:
         include:
           - os: macos-15
-            release-name: nfdtonfc-macos.tar.gz
+            release-name: nfdtonfc-macos.dmg
+            artifact: nfdtonfc-1.0.0.dmg
           - os: windows-2025
-            release-name: nfdtonfc-windows.zip
+            release-name: nfdtonfc-windows.msi
+            artifact: nfdtonfc-1.0.0.msi
           - os: ubuntu-24.04
-            release-name: nfdtonfc-ubuntu.tar.gz
+            release-name: nfdtonfc-ubuntu.deb
+            artifact: nfdtonfc_1.0.0_amd64.deb
 
     runs-on: ${{ matrix.os }}
 
@@ -34,16 +37,16 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x gradlew
 
-      - name: Build with jpackage
-        run: ./gradlew jpackageImage
+      - name: Build installer
+        run: ./gradlew jpackageInstaller
 
-      - name: Package artifact (macOS/Linux)
+      - name: Rename artifact (macOS/Linux)
         if: runner.os != 'Windows'
-        run: tar -czf ${{ matrix.release-name }} -C build/jpackage .
+        run: cp build/jpackage/${{ matrix.artifact }} ${{ matrix.release-name }}
 
-      - name: Package artifact (Windows)
+      - name: Rename artifact (Windows)
         if: runner.os == 'Windows'
-        run: Compress-Archive -Path build/jpackage/* -DestinationPath ${{ matrix.release-name }}
+        run: copy build\jpackage\${{ matrix.artifact }} ${{ matrix.release-name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7.0.1
@@ -64,8 +67,8 @@ jobs:
         uses: softprops/action-gh-release@v3.0.0
         with:
           files: |
-            artifacts/nfdtonfc-macos.tar.gz/nfdtonfc-macos.tar.gz
-            artifacts/nfdtonfc-windows.zip/nfdtonfc-windows.zip
-            artifacts/nfdtonfc-ubuntu.tar.gz/nfdtonfc-ubuntu.tar.gz
+            artifacts/nfdtonfc-macos.dmg/nfdtonfc-macos.dmg
+            artifacts/nfdtonfc-windows.msi/nfdtonfc-windows.msi
+            artifacts/nfdtonfc-ubuntu.deb/nfdtonfc-ubuntu.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
