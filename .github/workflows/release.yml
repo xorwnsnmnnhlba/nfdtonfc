@@ -14,14 +14,17 @@ jobs:
       matrix:
         include:
           - os: macos-15
-            release-name: nfdtonfc-macos.dmg
             artifact: nfdtonfc-1.0.0.dmg
+            ext: dmg
+            os-name: macos
           - os: windows-2025
-            release-name: nfdtonfc-windows.msi
             artifact: nfdtonfc-1.0.0.msi
+            ext: msi
+            os-name: windows
           - os: ubuntu-24.04
-            release-name: nfdtonfc-ubuntu.deb
             artifact: nfdtonfc_1.0.0_amd64.deb
+            ext: deb
+            os-name: ubuntu
 
     runs-on: ${{ matrix.os }}
 
@@ -42,17 +45,17 @@ jobs:
 
       - name: Rename artifact (macOS/Linux)
         if: runner.os != 'Windows'
-        run: cp build/jpackage/${{ matrix.artifact }} ${{ matrix.release-name }}
+        run: cp build/jpackage/${{ matrix.artifact }} nfdtonfc-${{ github.ref_name }}-${{ matrix.os-name }}.${{ matrix.ext }}
 
       - name: Rename artifact (Windows)
         if: runner.os == 'Windows'
-        run: copy build\jpackage\${{ matrix.artifact }} ${{ matrix.release-name }}
+        run: copy build\jpackage\${{ matrix.artifact }} nfdtonfc-${{ github.ref_name }}-${{ matrix.os-name }}.${{ matrix.ext }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: ${{ matrix.release-name }}
-          path: ${{ matrix.release-name }}
+          name: nfdtonfc-${{ github.ref_name }}-${{ matrix.os-name }}.${{ matrix.ext }}
+          path: nfdtonfc-${{ github.ref_name }}-${{ matrix.os-name }}.${{ matrix.ext }}
 
   release:
     needs: build
@@ -66,9 +69,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v3.0.0
         with:
-          files: |
-            artifacts/nfdtonfc-macos.dmg/nfdtonfc-macos.dmg
-            artifacts/nfdtonfc-windows.msi/nfdtonfc-windows.msi
-            artifacts/nfdtonfc-ubuntu.deb/nfdtonfc-ubuntu.deb
+          files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
