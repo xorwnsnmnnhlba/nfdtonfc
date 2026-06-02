@@ -25,7 +25,8 @@ jar {
 
 tasks.register('jpackageImage', Exec) {
     dependsOn jar
-    def jpackage = '/Library/Java/JavaVirtualMachines/zulu-25.jdk/Contents/Home/bin/jpackage'
+    def javaHome = System.getenv('JAVA_HOME') ?: System.getProperty('java.home')
+    def jpackage = "${javaHome}/bin/jpackage"
     def outputDir = layout.buildDirectory.dir('jpackage').get().asFile
     doFirst { outputDir.deleteDir() }
     commandLine jpackage,

@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: nfdtonfc.app/Contents/MacOS/nfdtonfc
+            output-name: nfdtonfc-macos
+          - os: windows-latest
+            artifact: nfdtonfc/nfdtonfc.exe
+            output-name: nfdtonfc-windows.exe
+          - os: ubuntu-latest
+            artifact: nfdtonfc/bin/nfdtonfc
+            output-name: nfdtonfc-linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'zulu'
+
+      - name: Grant execute permission (Unix)
+        if: runner.os != 'Windows'
+        run: chmod +x gradlew
+
+      - name: Build with jpackage
+        run: ./gradlew jpackageImage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output-name }}
+          path: build/jpackage/${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/nfdtonfc-macos/nfdtonfc
+            artifacts/nfdtonfc-windows.exe/nfdtonfc.exe
+            artifacts/nfdtonfc-linux/nfdtonfc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
