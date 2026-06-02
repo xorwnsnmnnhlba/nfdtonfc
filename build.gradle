@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+        vendor = JvmVendorSpec.AZUL
+    }
+}
+
+application {
+    mainClass = 'com.example.nfdtonfc.Main'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.example.nfdtonfc.Main'
+    }
+}
+
+tasks.register('jpackageImage', Exec) {
+    dependsOn jar
+    def jpackage = '/Library/Java/JavaVirtualMachines/zulu-25.jdk/Contents/Home/bin/jpackage'
+    def outputDir = layout.buildDirectory.dir('jpackage').get().asFile
+    doFirst { outputDir.deleteDir() }
+    commandLine jpackage,
+        '--type', 'app-image',
+        '--name', 'nfdtonfc',
+        '--main-jar', jar.archiveFileName.get(),
+        '--main-class', 'com.example.nfdtonfc.Main',
+        '--input', jar.destinationDirectory.get().asFile.absolutePath,
+        '--dest', outputDir.absolutePath
+}
