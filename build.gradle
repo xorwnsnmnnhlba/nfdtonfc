@@ -30,13 +30,18 @@ tasks.register('jpackageInstaller', Exec) {
     def outputDir = layout.buildDirectory.dir('jpackage').get().asFile
     def os = System.getProperty('os.name').toLowerCase()
     def type = os.contains('mac') ? 'dmg' : os.contains('win') ? 'msi' : 'deb'
+    def resourceDir = file('src/jpackage').absolutePath
     doFirst { outputDir.deleteDir() }
-    commandLine jpackage,
+    def args = [jpackage,
         '--type', type,
         '--name', 'nfdtonfc',
         '--app-version', version,
         '--main-jar', jar.archiveFileName.get(),
         '--main-class', 'com.example.nfdtonfc.Main',
         '--input', jar.destinationDirectory.get().asFile.absolutePath,
-        '--dest', outputDir.absolutePath
+        '--dest', outputDir.absolutePath]
+    if (os.contains('linux')) {
+        args += ['--resource-dir', resourceDir]
+    }
+    commandLine args
 }
