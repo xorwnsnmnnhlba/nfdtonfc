@@ -13,13 +13,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             artifact: nfdtonfc.app/Contents/MacOS/nfdtonfc
             output-name: nfdtonfc-macos
-          - os: windows-latest
+          - os: windows-2025
             artifact: nfdtonfc/nfdtonfc.exe
             output-name: nfdtonfc-windows.exe
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             artifact: nfdtonfc/bin/nfdtonfc
             output-name: nfdtonfc-linux
 
