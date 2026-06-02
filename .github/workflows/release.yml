@@ -15,13 +15,13 @@ jobs:
         include:
           - os: macos-15
             artifact: nfdtonfc.app/Contents/MacOS/nfdtonfc
-            output-name: nfdtonfc-macos
+            release-name: nfdtonfc-macos
           - os: windows-2025
             artifact: nfdtonfc/nfdtonfc.exe
-            output-name: nfdtonfc-windows.exe
+            release-name: nfdtonfc-windows.exe
           - os: ubuntu-24.04
             artifact: nfdtonfc/bin/nfdtonfc
-            output-name: nfdtonfc-linux
+            release-name: nfdtonfc-linux
 
     runs-on: ${{ matrix.os }}
 
@@ -40,15 +40,23 @@ jobs:
       - name: Build with jpackage
         run: ./gradlew jpackageImage
 
+      - name: Rename artifact (Unix)
+        if: runner.os != 'Windows'
+        run: cp build/jpackage/${{ matrix.artifact }} ${{ matrix.release-name }}
+
+      - name: Rename artifact (Windows)
+        if: runner.os == 'Windows'
+        run: copy build\jpackage\${{ matrix.artifact }} ${{ matrix.release-name }}
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: ${{ matrix.output-name }}
-          path: build/jpackage/${{ matrix.artifact }}
+          name: ${{ matrix.release-name }}
+          path: ${{ matrix.release-name }}
 
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/download-artifact@v8.0.1
@@ -59,8 +67,8 @@ jobs:
         uses: softprops/action-gh-release@v3.0.0
         with:
           files: |
-            artifacts/nfdtonfc-macos/nfdtonfc
-            artifacts/nfdtonfc-windows.exe/nfdtonfc.exe
-            artifacts/nfdtonfc-linux/nfdtonfc
+            artifacts/nfdtonfc-macos/nfdtonfc-macos
+            artifacts/nfdtonfc-windows.exe/nfdtonfc-windows.exe
+            artifacts/nfdtonfc-linux/nfdtonfc-linux
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
