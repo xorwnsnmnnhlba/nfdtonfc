@@ -32,9 +32,17 @@ public class ConflictResolver {
 
         String input = scanner.nextLine().trim().toLowerCase();
         switch (input) {
-            case "y" -> { return Action.OVERWRITE; }
-            case "a" -> { forceAll = true; return Action.OVERWRITE; }
-            case "s" -> { skipAll = true; return Action.SKIP; }
+            case "y" -> {
+                return Action.OVERWRITE;
+            }
+            case "a" -> {
+                forceAll = true;
+                return Action.OVERWRITE;
+            }
+            case "s" -> {
+                skipAll = true;
+                return Action.SKIP;
+            }
         }
         return Action.SKIP;
     }
