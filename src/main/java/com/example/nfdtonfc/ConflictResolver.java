@@ -31,11 +31,11 @@ public class ConflictResolver {
         System.out.print("Overwrite? [y/n/a/s] ");
 
         String input = scanner.nextLine().trim().toLowerCase();
-        return switch (input) {
-            case "y" -> Action.OVERWRITE;
-            case "a" -> { forceAll = true; yield Action.OVERWRITE; }
-            case "s" -> { skipAll = true; yield Action.SKIP; }
-            default  -> Action.SKIP;
-        };
+        switch (input) {
+            case "y" -> { return Action.OVERWRITE; }
+            case "a" -> { forceAll = true; return Action.OVERWRITE; }
+            case "s" -> { skipAll = true; return Action.SKIP; }
+        }
+        return Action.SKIP;
     }
 }
