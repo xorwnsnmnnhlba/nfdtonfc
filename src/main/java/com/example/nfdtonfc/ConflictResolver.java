@@ -16,8 +16,12 @@ public class ConflictResolver {
     }
 
     public Action resolve(String conflictingName) {
-        if (forceAll) return Action.OVERWRITE;
-        if (skipAll)  return Action.SKIP;
+        if (forceAll) {
+            return Action.OVERWRITE;
+        }
+        if (skipAll) {
+            return Action.SKIP;
+        }
 
         System.out.println("'" + conflictingName + "' already exists.");
         System.out.println("  y  Overwrite this file");
