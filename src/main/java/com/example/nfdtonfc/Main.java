@@ -10,9 +10,23 @@ import java.util.stream.Stream;
 public class Main {
 
     static void main(String[] args) throws IOException {
-        if (args.length == 0) {
-            System.err.println("Usage: nfdtonfc <file-or-directory> [file-or-directory ...]");
-            System.exit(1);
+        if (args.length == 0 || (args.length == 1 && args[0].equals("--help"))) {
+            System.out.println("Usage: nfdtonfc <file-or-directory> [file-or-directory ...]");
+            System.out.println();
+            System.out.println("Convert filenames from NFD to NFC Unicode normalization.");
+            System.out.println();
+            System.out.println("Arguments:");
+            System.out.println("  <file-or-directory>  One or more files or directories to process.");
+            System.out.println("                       Directories are processed recursively.");
+            System.out.println();
+            System.out.println("Options:");
+            System.out.println("  --help               Show this help message and exit.");
+            System.out.println();
+            System.out.println("Examples:");
+            System.out.println("  nfdtonfc file.txt");
+            System.out.println("  nfdtonfc ~/Downloads");
+            System.out.println("  nfdtonfc dir1 dir2 file.txt");
+            System.exit(args.length == 0 ? 1 : 0);
         }
 
         for (String arg : args) {

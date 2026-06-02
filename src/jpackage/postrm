@@ -1,2 +1,4 @@
 #!/bin/bash
 rm -f /usr/local/bin/nfdtonfc
+rm -f /usr/local/share/man/man1/nfdtonfc.1.gz
+mandb -q

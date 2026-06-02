@@ -1,0 +1,45 @@
+.TH NFDTONFC 1 "2026" "1.0.0" "User Commands"
+.SH NAME
+nfdtonfc \- convert filenames from NFD to NFC Unicode normalization
+.SH SYNOPSIS
+.B nfdtonfc
+[\fB\-\-help\fR]
+\fI<file-or-directory>\fR
+[\fI<file-or-directory>\fR ...]
+.SH DESCRIPTION
+.B nfdtonfc
+renames files and directories whose names are encoded in NFD (Canonical Decomposition) Unicode normalization form to NFC (Canonical Composition) form.
+.PP
+This is particularly useful on macOS, where the HFS+ filesystem stores filenames in NFD, causing issues when files are shared with Linux or Windows systems that expect NFC filenames.
+.PP
+When a directory is specified, it is processed recursively. Deepest paths are renamed first to avoid broken references caused by parent directory renames.
+.SH OPTIONS
+.TP
+.B \-\-help
+Show a help message and exit.
+.SH ARGUMENTS
+.TP
+.I <file-or-directory>
+One or more files or directories to process. Directories are traversed recursively.
+.SH EXAMPLES
+.TP
+Convert a single file:
+.B nfdtonfc file.txt
+.TP
+Convert all files in a directory recursively:
+.B nfdtonfc ~/Downloads
+.TP
+Convert multiple targets at once:
+.B nfdtonfc dir1 dir2 file.txt
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+No arguments were provided.
+.SH AUTHOR
+xorwnsnmnnhlba
+.SH SEE ALSO
+.BR mv (1),
+.BR find (1)
