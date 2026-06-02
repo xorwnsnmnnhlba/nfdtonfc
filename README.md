@@ -1,77 +1,77 @@
 # nfdtonfc
 
-A command-line tool that converts filenames from NFD to NFC Unicode normalization.
+파일명의 유니코드 정규화 형식을 NFD에서 NFC로 변환하는 커맨드라인 툴입니다.
 
-Useful when dealing with files created on macOS (HFS+), which stores filenames in NFD form, causing compatibility issues on Linux and Windows systems that expect NFC.
+macOS(HFS+)에서 생성된 파일은 파일명이 NFD 형식으로 저장되어, NFC를 기대하는 Linux 및 Windows 환경에서 호환성 문제가 발생할 수 있습니다. 이 툴은 해당 문제를 해결합니다.
 
-## Installation
+## 설치
 
-Download the installer for your platform from the [Releases](https://github.com/xorwnsnmnnhlba/nfdtonfc/releases) page.
+[Releases](https://github.com/xorwnsnmnnhlba/nfdtonfc/releases) 페이지에서 플랫폼에 맞는 설치 파일을 다운로드하세요.
 
 ### macOS
 
-Open the `.dmg` file and follow the installation instructions.
+`.dmg` 파일을 열어 설치합니다.
 
 ### Windows
 
-Run the `.msi` file and follow the installation instructions.
+`.msi` 파일을 실행하여 설치합니다.
 
 ### Ubuntu / WSL
 
 ```bash
-sudo apt install ./nfdtonfc-<version>-ubuntu.deb
+sudo apt install ./nfdtonfc-<버전>-ubuntu.deb
 ```
 
-## Usage
+## 사용법
 
 ```
-nfdtonfc <file-or-directory> [file-or-directory ...]
+nfdtonfc <파일-또는-디렉터리> [파일-또는-디렉터리 ...]
 ```
 
-### Examples
+### 예시
 
 ```bash
-# Convert a single file
+# 파일 하나 변환
 nfdtonfc file.txt
 
-# Convert all files in a directory recursively
+# 디렉터리 내 파일 전체 재귀 변환
 nfdtonfc ~/Downloads
 
-# Convert multiple targets at once
+# 여러 대상 한 번에 변환
 nfdtonfc dir1 dir2 file.txt
 ```
 
-### Options
+### 옵션
 
-| Option | Description |
-|--------|-------------|
-| `--help` | Show help message and exit |
-| `--version` | Show version and exit |
+| 옵션 | 설명 |
+|------|------|
+| `--help` | 도움말 출력 후 종료 |
+| `--version` | 버전 출력 후 종료 |
 
-## Build
+## 빌드
 
-Requires JDK 25 (Zulu).
+JDK 25 (Zulu) 가 필요합니다.
 
 ```bash
-# Build installer for current OS
+# 현재 OS용 설치 파일 빌드
 ./gradlew jpackageInstaller
 ```
 
-| OS | Output |
+| OS | 결과물 |
 |----|--------|
-| macOS | `build/jpackage/nfdtonfc-<version>.dmg` |
-| Windows | `build/jpackage/nfdtonfc-<version>.msi` |
-| Ubuntu | `build/jpackage/nfdtonfc_<version>_amd64.deb` |
+| macOS | `build/jpackage/nfdtonfc-<버전>.dmg` |
+| Windows | `build/jpackage/nfdtonfc-<버전>.msi` |
+| Ubuntu | `build/jpackage/nfdtonfc_<버전>_amd64.deb` |
 
-## Uninstallation
+## 제거
 
 ### macOS
 
-Drag `nfdtonfc` from `/Applications` to Trash.
+`/Applications`에서 `nfdtonfc`를 휴지통으로 이동합니다.
 
 ### Windows
 
-Uninstall via **Settings > Apps**.
+**설정 > 앱** 에서 제거합니다.
 
 ### Ubuntu / WSL
 
