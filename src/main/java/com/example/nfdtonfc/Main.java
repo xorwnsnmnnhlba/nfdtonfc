@@ -10,6 +10,12 @@ import java.util.stream.Stream;
 public class Main {
 
     static void main(String[] args) throws IOException {
+        if (args.length == 1 && args[0].equals("--version")) {
+            String version = Main.class.getPackage().getImplementationVersion();
+            System.out.println("nfdtonfc " + (version != null ? version : "unknown"));
+            System.exit(0);
+        }
+
         if (args.length == 0 || (args.length == 1 && args[0].equals("--help"))) {
             System.out.println("Usage: nfdtonfc <file-or-directory> [file-or-directory ...]");
             System.out.println();
