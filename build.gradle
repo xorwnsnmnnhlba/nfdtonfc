@@ -44,12 +44,6 @@ tasks.register('jpackageInstaller', Exec) {
         '--dest', outputDir.absolutePath]
     if (os.contains('linux')) {
         args += ['--resource-dir', resourceDir]
-        doFirst {
-            copy {
-                from 'src/jpackage/nfdtonfc.1'
-                into inputDir
-            }
-        }
     }
     commandLine args
 }
