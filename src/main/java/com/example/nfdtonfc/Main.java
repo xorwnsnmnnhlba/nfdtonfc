@@ -12,6 +12,15 @@ import java.util.stream.Stream;
 
 public class Main {
 
+    private boolean force;
+    private boolean skipAll;
+    private final Scanner scanner;
+
+    private Main(boolean force, Scanner scanner) {
+        this.force = force;
+        this.scanner = scanner;
+    }
+
     public static void main(String[] args) throws IOException {
         if (args.length == 1 && args[0].equals("--version")) {
             String version = Main.class.getPackage().getImplementationVersion();
@@ -56,6 +65,7 @@ public class Main {
         }
 
         Scanner scanner = force ? null : new Scanner(System.in);
+        Main runner = new Main(force, scanner);
 
         for (String arg : targets) {
             Path path = Path.of(arg);
@@ -64,9 +74,9 @@ public class Main {
                 continue;
             }
             if (Files.isDirectory(path)) {
-                convertDirectory(path, force, scanner);
+                runner.convertDirectory(path);
             } else {
-                convertFile(path, force, scanner);
+                runner.convertFile(path);
             }
         }
 
@@ -75,16 +85,16 @@ public class Main {
         }
     }
 
-    private static void convertDirectory(Path dir, boolean force, Scanner scanner) throws IOException {
+    private void convertDirectory(Path dir) throws IOException {
         try (Stream<Path> stream = Files.walk(dir)) {
             List<Path> paths = stream.sorted((a, b) -> b.getNameCount() - a.getNameCount()).toList();
             for (Path path : paths) {
-                convertFile(path, force, scanner);
+                convertFile(path);
             }
         }
     }
 
-    private static void convertFile(Path path, boolean force, Scanner scanner) throws IOException {
+    private void convertFile(Path path) throws IOException {
         String originalName = path.getFileName().toString();
         String normalizedName = Normalizer.normalize(originalName, Normalizer.Form.NFC);
 
@@ -98,14 +108,31 @@ public class Main {
             if (force) {
                 Files.move(path, target, StandardCopyOption.REPLACE_EXISTING);
                 System.out.println("Renamed (overwritten): " + originalName + " -> " + normalizedName);
+            } else if (skipAll) {
+                System.out.println("Skipped: " + originalName);
             } else {
-                System.out.print("'" + normalizedName + "' already exists. Overwrite? [y/N] ");
+                System.out.println("'" + normalizedName + "' already exists.");
+                System.out.println("  y  Overwrite this file");
+                System.out.println("  n  Skip this file");
+                System.out.println("  a  Overwrite this and all remaining conflicts");
+                System.out.println("  s  Skip this and all remaining conflicts");
+                System.out.print("Overwrite? [y/n/a/s] ");
                 String input = scanner.nextLine().trim().toLowerCase();
-                if (input.equals("y") || input.equals("yes")) {
-                    Files.move(path, target, StandardCopyOption.REPLACE_EXISTING);
-                    System.out.println("Renamed (overwritten): " + originalName + " -> " + normalizedName);
-                } else {
-                    System.out.println("Skipped: " + originalName);
+                switch (input) {
+                    case "y" -> {
+                        Files.move(path, target, StandardCopyOption.REPLACE_EXISTING);
+                        System.out.println("Renamed (overwritten): " + originalName + " -> " + normalizedName);
+                    }
+                    case "a" -> {
+                        force = true;
+                        Files.move(path, target, StandardCopyOption.REPLACE_EXISTING);
+                        System.out.println("Renamed (overwritten): " + originalName + " -> " + normalizedName);
+                    }
+                    case "s" -> {
+                        skipAll = true;
+                        System.out.println("Skipped: " + originalName);
+                    }
+                    default -> System.out.println("Skipped: " + originalName);
                 }
             }
         } else {
