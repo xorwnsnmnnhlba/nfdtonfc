@@ -5,6 +5,7 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
@@ -26,11 +27,13 @@ public class Converter {
         }
         try {
             Linker linker = Linker.nativeLinker();
+            SymbolLookup libc = SymbolLookup.libraryLookup("libSystem.B.dylib", Arena.global());
             return linker.downcallHandle(
-                linker.defaultLookup().find("rename").get(),
+                libc.find("rename").get(),
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
             );
         } catch (Throwable e) {
+            System.err.println("[nfdtonfc] Warning: failed to load rename() from libSystem: " + e.getMessage());
             return null;
         }
     }
