@@ -1,5 +1,6 @@
 package com.example.nfdtonfc;
 
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class ConflictResolver {
@@ -30,7 +31,14 @@ public class ConflictResolver {
         System.out.println("  s  Skip this and all remaining conflicts");
         System.out.print("Overwrite? [y/n/a/s] ");
 
-        String input = scanner.nextLine().trim().toLowerCase();
+        String input;
+        try {
+            input = scanner.nextLine().trim().toLowerCase();
+        } catch (NoSuchElementException e) {
+            System.out.println("\nAborted.");
+            System.exit(0);
+            return Action.SKIP;
+        }
         switch (input) {
             case "y" -> {
                 return Action.OVERWRITE;
