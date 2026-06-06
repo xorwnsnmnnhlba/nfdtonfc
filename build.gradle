@@ -45,5 +45,8 @@ tasks.register('jpackageInstaller', Exec) {
     if (os.contains('linux')) {
         args += ['--resource-dir', resourceDir]
     }
+    if (os.contains('win')) {
+        args += ['--win-console']
+    }
     commandLine args
 }
