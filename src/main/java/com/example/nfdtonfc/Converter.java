@@ -1,6 +1,7 @@
 package com.example.nfdtonfc;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -93,7 +94,7 @@ public class Converter {
         // NFC와 NFD가 다른 경우(비ASCII)라면 on-disk가 NFD일 수 있으므로 항상 rename 시도
         byte[] nfcBytes = normalizedName.getBytes(StandardCharsets.UTF_8);
         byte[] nfdBytes = Normalizer.normalize(originalName, Normalizer.Form.NFD).getBytes(StandardCharsets.UTF_8);
-        return java.util.Arrays.equals(nfcBytes, nfdBytes);
+        return Arrays.equals(nfcBytes, nfdBytes);
     }
 
     private void rename(Path source, String targetName) throws IOException {
