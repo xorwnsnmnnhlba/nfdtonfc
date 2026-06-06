@@ -1,9 +1,14 @@
 package com.example.nfdtonfc;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
 public class App {
 
@@ -40,16 +45,44 @@ public class App {
         Converter converter = new Converter(resolver);
 
         for (String arg : options.targets) {
-            Path path = Path.of(arg);
-            if (!Files.exists(path)) {
+            List<Path> paths = expandGlob(arg);
+            if (paths.isEmpty()) {
                 System.err.println("Not found: " + arg);
                 continue;
             }
-            converter.convert(path);
+            for (Path path : paths) {
+                converter.convert(path);
+            }
         }
 
         if (scanner != null) {
             scanner.close();
         }
+    }
+
+    private List<Path> expandGlob(String arg) throws IOException {
+        Path argPath = Path.of(arg);
+
+        if (Files.exists(argPath)) {
+            return List.of(argPath);
+        }
+
+        // glob 패턴 처리
+        Path parent = argPath.getParent();
+        String pattern = argPath.getFileName().toString();
+        Path baseDir = parent != null ? parent : Path.of(".");
+
+        if (!Files.isDirectory(baseDir)) {
+            return List.of();
+        }
+
+        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+        List<Path> matched = new ArrayList<>();
+        try (Stream<Path> stream = Files.list(baseDir)) {
+            stream.filter(p -> matcher.matches(p.getFileName()))
+                  .sorted()
+                  .forEach(matched::add);
+        }
+        return matched;
     }
 }
