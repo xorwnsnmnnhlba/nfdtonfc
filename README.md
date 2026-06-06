@@ -16,6 +16,15 @@ macOS(HFS+)에서 생성된 파일은 파일명이 NFD 형식으로 저장되어
 
 `.msi` 파일을 실행하여 설치합니다.
 
+설치 후 환경변수 PATH에 설치 경로를 수동으로 추가해야 합니다.
+
+**PowerShell (관리자 권한):**
+```powershell
+[System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Program Files\nfdtonfc", "Machine")
+```
+
+설정 후 터미널을 새로 열면 어디서든 `nfdtonfc` 명령어로 실행 가능합니다.
+
 ### Ubuntu / WSL
 
 ```bash
