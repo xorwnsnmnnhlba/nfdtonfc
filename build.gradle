@@ -41,7 +41,10 @@ tasks.register('jpackageInstaller', Exec) {
         '--main-jar', jar.archiveFileName.get(),
         '--main-class', 'com.example.nfdtonfc.Main',
         '--input', inputDir.absolutePath,
-        '--dest', outputDir.absolutePath]
+        '--dest', outputDir.absolutePath,
+        '--java-options', '-Dfile.encoding=UTF-8',
+        '--java-options', '-Dstdout.encoding=UTF-8',
+        '--java-options', '-Dstderr.encoding=UTF-8']
     if (os.contains('linux')) {
         args += ['--resource-dir', resourceDir]
     }
