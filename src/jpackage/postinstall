@@ -1,0 +1,2 @@
+#!/bin/bash
+ln -sf /Applications/nfdtonfc.app/Contents/MacOS/nfdtonfc /usr/local/bin/nfdtonfc

@@ -30,7 +30,7 @@ tasks.register('jpackageInstaller', Exec) {
     def jpackage = "${javaHome}/bin/jpackage"
     def outputDir = layout.buildDirectory.dir('jpackage').get().asFile
     def os = System.getProperty('os.name').toLowerCase()
-    def type = os.contains('mac') ? 'dmg' : os.contains('win') ? 'msi' : 'deb'
+    def type = os.contains('mac') ? 'pkg' : os.contains('win') ? 'msi' : 'deb'
     def resourceDir = file('src/jpackage').absolutePath
     doFirst { outputDir.deleteDir() }
     def inputDir = jar.destinationDirectory.get().asFile
@@ -46,7 +46,7 @@ tasks.register('jpackageInstaller', Exec) {
         '--java-options', '-Dstdout.encoding=UTF-8',
         '--java-options', '-Dstderr.encoding=UTF-8',
         '--java-options', '--enable-native-access=ALL-UNNAMED']
-    if (os.contains('linux')) {
+    if (os.contains('linux') || os.contains('mac')) {
         args += ['--resource-dir', resourceDir]
     }
     if (os.contains('win')) {

@@ -10,7 +10,7 @@ macOS(HFS+)에서 생성된 파일은 파일명이 NFD 형식으로 저장되어
 
 ### macOS
 
-`.dmg` 파일을 열어 설치합니다.
+`.pkg` 파일을 열어 설치합니다. 설치 후 터미널 어디서든 `nfdtonfc` 명령어로 실행 가능합니다.
 
 ### Windows
 
@@ -69,7 +69,7 @@ JDK 25 (Zulu) 가 필요합니다.
 
 | OS | 결과물 |
 |----|--------|
-| macOS | `build/jpackage/nfdtonfc-<버전>.dmg` |
+| macOS | `build/jpackage/nfdtonfc-<버전>.pkg` |
 | Windows | `build/jpackage/nfdtonfc-<버전>.msi` |
 | Ubuntu | `build/jpackage/nfdtonfc_<버전>_amd64.deb` |
 
