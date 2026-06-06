@@ -42,6 +42,19 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x gradlew
 
+      - name: Set version in postinst man page (Ubuntu)
+        if: matrix.os-name == 'ubuntu'
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          sed -i "s/\.TH NFDTONFC 1 \"2026\" \"1\.0\.0\"/.TH NFDTONFC 1 \"2026\" \"${VERSION}\"/" src/jpackage/postinst
+
+      - name: Set version in build.gradle
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          sed -i "s/version = '1\.0\.0'/version = '${VERSION}'/" build.gradle
+
       - name: Build installer
         run: ./gradlew jpackageInstaller
 
