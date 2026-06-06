@@ -56,6 +56,36 @@ jobs:
             cp build/jpackage/nfdtonfc-${VERSION}.${{ matrix.ext }} nfdtonfc-${{ github.ref_name }}-${{ matrix.os-name }}.${{ matrix.ext }}
           fi
 
+      - name: Patch MSI to register PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = "${{ steps.version.outputs.VERSION }}"
+          $msiPath = (Resolve-Path "build\jpackage\nfdtonfc-${VERSION}.msi").Path
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          $db = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($msiPath, 1))
+
+          # 첫 번째 컴포넌트 조회
+          $view = $db.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $db, @("SELECT `Component` FROM `Component`"))
+          $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null)
+          $record = $view.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $view, $null)
+          $component = $record.GetType().InvokeMember("StringData", "GetProperty", $null, $record, @(1))
+          $view.GetType().InvokeMember("Close", "InvokeMethod", $null, $view, $null)
+
+          # Environment 테이블 생성
+          try {
+            $view = $db.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $db, @("CREATE TABLE ``Environment`` (``Environment`` CHAR(72) NOT NULL, ``Name`` CHAR(255) NOT NULL LOCALIZABLE, ``Value`` CHAR(255) LOCALIZABLE, ``Component_`` CHAR(72) NOT NULL PRIMARY KEY ``Environment``)"))
+            $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null)
+            $view.GetType().InvokeMember("Close", "InvokeMethod", $null, $view, $null)
+          } catch {}
+
+          # PATH 등록
+          $view = $db.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $db, @("INSERT INTO ``Environment`` (``Environment``, ``Name``, ``Value``, ``Component_``) VALUES ('PATH_NFDTONFC', 'PATH', '[INSTALLDIR]', '$component')"))
+          $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null)
+          $view.GetType().InvokeMember("Close", "InvokeMethod", $null, $view, $null)
+
+          $db.GetType().InvokeMember("Commit", "InvokeMethod", $null, $db, $null)
+
       - name: Rename artifact (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
