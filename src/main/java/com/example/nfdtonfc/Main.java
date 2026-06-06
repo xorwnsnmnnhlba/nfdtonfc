@@ -12,6 +12,15 @@ public class Main {
     public static void main(String[] args) throws IOException {
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            try {
+                new ProcessBuilder("cmd", "/c", "chcp", "65001")
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start()
+                    .waitFor();
+            } catch (Exception ignored) {}
+        }
         if (args.length == 1 && args[0].equals("--version")) {
             String version = Main.class.getPackage().getImplementationVersion();
             System.out.println("nfdtonfc " + (version != null ? version : "unknown"));
