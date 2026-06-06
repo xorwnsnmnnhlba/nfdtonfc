@@ -1,6 +1,8 @@
 package com.example.nfdtonfc;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
@@ -8,6 +10,8 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws IOException {
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
         if (args.length == 1 && args[0].equals("--version")) {
             String version = Main.class.getPackage().getImplementationVersion();
             System.out.println("nfdtonfc " + (version != null ? version : "unknown"));
