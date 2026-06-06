@@ -47,16 +47,11 @@ jobs:
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          sed -i "s/\.TH NFDTONFC 1 \"2026\" \"1\.0\.0\"/.TH NFDTONFC 1 \"2026\" \"${VERSION}\"/" src/jpackage/postinst
-
-      - name: Set version in build.gradle
-        shell: bash
-        run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
-          sed -i "s/version = '1\.0\.0'/version = '${VERSION}'/" build.gradle
+          sed -i "s|.TH NFDTONFC 1 \"2026\" \"1.0.0\"|.TH NFDTONFC 1 \"2026\" \"${VERSION}\"|" src/jpackage/postinst
 
       - name: Build installer
-        run: ./gradlew jpackageInstaller
+        shell: bash
+        run: ./gradlew jpackageInstaller -Pversion=${{ steps.version.outputs.VERSION }}
 
       - name: Rename artifact (macOS/Linux)
         if: runner.os != 'Windows'
