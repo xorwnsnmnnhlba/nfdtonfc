@@ -65,7 +65,7 @@ public class Converter {
         String originalName = path.getFileName().toString();
         String normalizedName = Normalizer.normalize(originalName, Normalizer.Form.NFC);
 
-        if (originalName.equals(normalizedName)) {
+        if (needsNoConversion(originalName, normalizedName)) {
             return;
         }
 
@@ -83,6 +83,17 @@ public class Converter {
             rename(path, normalizedName);
             System.out.println("Renamed: " + originalName + " -> " + normalizedName);
         }
+    }
+
+    private boolean needsNoConversion(String originalName, String normalizedName) {
+        if (!IS_MAC) {
+            return originalName.equals(normalizedName);
+        }
+        // macOS JVM은 파일명을 NFC로 정규화해서 반환하므로 문자열 비교로는 NFD 판별 불가
+        // NFC와 NFD가 다른 경우(비ASCII)라면 on-disk가 NFD일 수 있으므로 항상 rename 시도
+        byte[] nfcBytes = normalizedName.getBytes(StandardCharsets.UTF_8);
+        byte[] nfdBytes = Normalizer.normalize(originalName, Normalizer.Form.NFD).getBytes(StandardCharsets.UTF_8);
+        return java.util.Arrays.equals(nfcBytes, nfdBytes);
     }
 
     private void rename(Path source, String targetName) throws IOException {
