@@ -2,6 +2,12 @@ package com.example.nfdtonfc;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,12 +20,14 @@ public class Main {
         System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
             try {
-                new ProcessBuilder("cmd", "/c", "chcp", "65001")
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start()
-                    .waitFor();
-            } catch (Exception ignored) {}
+                Linker linker = Linker.nativeLinker();
+                SymbolLookup kernel32 = SymbolLookup.libraryLookup("kernel32", Arena.global());
+                MethodHandle setConsoleOutputCP = linker.downcallHandle(
+                    kernel32.find("SetConsoleOutputCP").get(),
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT)
+                );
+                setConsoleOutputCP.invoke(65001);
+            } catch (Throwable ignored) {}
         }
         if (args.length == 1 && args[0].equals("--version")) {
             String version = Main.class.getPackage().getImplementationVersion();

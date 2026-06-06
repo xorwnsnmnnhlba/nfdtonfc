@@ -44,7 +44,8 @@ tasks.register('jpackageInstaller', Exec) {
         '--dest', outputDir.absolutePath,
         '--java-options', '-Dfile.encoding=UTF-8',
         '--java-options', '-Dstdout.encoding=UTF-8',
-        '--java-options', '-Dstderr.encoding=UTF-8']
+        '--java-options', '-Dstderr.encoding=UTF-8',
+        '--java-options', '--enable-native-access=ALL-UNNAMED']
     if (os.contains('linux')) {
         args += ['--resource-dir', resourceDir]
     }
