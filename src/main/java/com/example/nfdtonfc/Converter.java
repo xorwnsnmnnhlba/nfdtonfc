@@ -94,11 +94,20 @@ public class Converter {
     }
 
     private void renameDirect(Path source, String targetName) throws IOException {
+        String parentStr = source.getParent() != null ? source.getParent().toString() + "/" : "";
+        String tempName = parentStr + ".nfdtonfc_tmp_" + System.nanoTime();
+        String dstPath = parentStr + targetName;
+
+        // APFS는 NFD↔NFC를 같은 파일로 취급해 직접 rename을 no-op으로 처리함
+        // 임시 이름을 거치는 2단계 rename으로 우회: NFD -> temp -> NFC
+        invokeRename(source.toString(), tempName);
+        invokeRename(tempName, dstPath);
+    }
+
+    private void invokeRename(String src, String dst) throws IOException {
         try (Arena arena = Arena.ofConfined()) {
-            // Path.toString()은 macOS에서 NFD로 변환되므로 직접 NFC 바이트를 조립
-            String parentStr = source.getParent() != null ? source.getParent().toString() + "/" : "";
-            byte[] srcBytes = source.toString().getBytes(StandardCharsets.UTF_8);
-            byte[] dstBytes = (parentStr + targetName).getBytes(StandardCharsets.UTF_8);
+            byte[] srcBytes = src.getBytes(StandardCharsets.UTF_8);
+            byte[] dstBytes = dst.getBytes(StandardCharsets.UTF_8);
 
             MemorySegment srcSeg = arena.allocate(srcBytes.length + 1);
             MemorySegment dstSeg = arena.allocate(dstBytes.length + 1);
@@ -108,7 +117,7 @@ public class Converter {
 
             int result = (int) RENAME_HANDLE.invoke(srcSeg, dstSeg);
             if (result != 0) {
-                throw new IOException("rename() failed for: " + source);
+                throw new IOException("rename() failed: " + src + " -> " + dst);
             }
         } catch (IOException e) {
             throw e;
