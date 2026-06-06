@@ -71,20 +71,21 @@ public class Converter {
         if (Files.exists(target) && !Files.isSameFile(path, target)) {
             ConflictResolver.Action action = resolver.resolve(normalizedName);
             if (action == ConflictResolver.Action.OVERWRITE) {
-                rename(path, target);
+                rename(path, normalizedName);
                 System.out.println("Renamed (overwritten): " + originalName + " -> " + normalizedName);
             } else {
                 System.out.println("Skipped: " + originalName);
             }
         } else {
-            rename(path, target);
+            rename(path, normalizedName);
             System.out.println("Renamed: " + originalName + " -> " + normalizedName);
         }
     }
 
-    private void rename(Path source, Path target) throws IOException {
+    private void rename(Path source, String targetName) throws IOException {
+        Path target = source.resolveSibling(targetName);
         if (IS_MAC && RENAME_HANDLE != null) {
-            renameDirect(source, target);
+            renameDirect(source, targetName);
         } else if (Files.exists(target)) {
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
         } else {
@@ -92,10 +93,12 @@ public class Converter {
         }
     }
 
-    private void renameDirect(Path source, Path target) throws IOException {
+    private void renameDirect(Path source, String targetName) throws IOException {
         try (Arena arena = Arena.ofConfined()) {
+            // Path.toString()은 macOS에서 NFD로 변환되므로 직접 NFC 바이트를 조립
+            String parentStr = source.getParent() != null ? source.getParent().toString() + "/" : "";
             byte[] srcBytes = source.toString().getBytes(StandardCharsets.UTF_8);
-            byte[] dstBytes = target.toString().getBytes(StandardCharsets.UTF_8);
+            byte[] dstBytes = (parentStr + targetName).getBytes(StandardCharsets.UTF_8);
 
             MemorySegment srcSeg = arena.allocate(srcBytes.length + 1);
             MemorySegment dstSeg = arena.allocate(dstBytes.length + 1);
