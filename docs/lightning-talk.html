@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Actions로 멀티플랫폼 CI/CD 파이프라인 구성하기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    .card  { @apply bg-white rounded-2xl shadow border border-slate-100 p-5; }
+    .dark-card { @apply bg-white/5 border border-white/10 rounded-2xl p-5; }
+    .code  { @apply bg-slate-900 text-green-300 rounded-xl p-4 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre; }
+    .pill-sky    { @apply bg-sky-100 text-sky-700 text-xs font-semibold px-2.5 py-1 rounded-full; }
+    .pill-red    { @apply bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-1 rounded-full; }
+    .pill-green  { @apply bg-emerald-100 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full; }
+    .pill-amber  { @apply bg-amber-100 text-amber-700 text-xs font-semibold px-2.5 py-1 rounded-full; }
+    .tag  { @apply inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-3; }
+    .step { @apply flex-shrink-0 w-6 h-6 rounded-full bg-sky-500 text-white text-xs font-bold flex items-center justify-center; }
+    .warn { @apply bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800; }
+    .tip  { @apply bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-800; }
+  </style>
+</head>
+<body class="bg-black overflow-hidden" style="height:100dvh">
+
+  <div id="deck" class="flex h-full transition-transform duration-500 ease-in-out will-change-transform">
+
+    <!-- ═══════════════════════════════════════════════════
+         1. 표지
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12
+                    bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white">
+      <div class="max-w-5xl mx-auto w-full">
+        <p class="text-sky-400 font-mono text-sm tracking-widest uppercase mb-5">Lightning Talk · 2026</p>
+        <h1 class="text-5xl font-black leading-tight mb-5">
+          GitHub Actions로<br/>
+          <span class="text-sky-400">멀티플랫폼 CI/CD</span><br/>
+          파이프라인 구성하기
+        </h1>
+        <p class="text-slate-300 text-lg max-w-2xl mb-8">
+          Java CLI 도구 <strong class="text-white">nfdtonfc</strong>를 macOS · Windows · Ubuntu에<br/>
+          <strong class="text-white">태그 하나</strong>로 자동 빌드·배포하기까지의 실전 가이드
+        </p>
+        <div class="flex flex-wrap gap-2 mb-12">
+          <span class="bg-sky-500/20 border border-sky-500/30 text-sky-300 px-3 py-1.5 rounded-full text-sm">GitHub Actions</span>
+          <span class="bg-sky-500/20 border border-sky-500/30 text-sky-300 px-3 py-1.5 rounded-full text-sm">Matrix Build</span>
+          <span class="bg-sky-500/20 border border-sky-500/30 text-sky-300 px-3 py-1.5 rounded-full text-sm">jpackage</span>
+          <span class="bg-sky-500/20 border border-sky-500/30 text-sky-300 px-3 py-1.5 rounded-full text-sm">Java 25 FFM API</span>
+        </div>
+
+        <!-- 목차 미리보기 -->
+        <div class="grid grid-cols-4 gap-3 text-sm">
+          <div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+            <div class="text-sky-400 font-bold mb-1">① 왜 CI/CD?</div>
+            <div class="text-slate-400 text-xs">이론 배경</div>
+          </div>
+          <div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+            <div class="text-violet-400 font-bold mb-1">② 파이프라인 설계</div>
+            <div class="text-slate-400 text-xs">전체 구조 잡기</div>
+          </div>
+          <div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+            <div class="text-amber-400 font-bold mb-1">③ 단계별 구현</div>
+            <div class="text-slate-400 text-xs">Trigger → Build → Release</div>
+          </div>
+          <div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+            <div class="text-emerald-400 font-bold mb-1">④ 실전 함정</div>
+            <div class="text-slate-400 text-xs">반드시 피해야 할 것들</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         2. 왜 CI/CD인가 — 문제 정의
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-white text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-slate-100 text-slate-600">① 이론 배경</span>
+        <h2 class="text-4xl font-black mb-2">수동 배포의 문제</h2>
+        <p class="text-slate-500 mb-8">릴리즈마다 개발자가 직접 3개 OS에서 빌드하면 어떤 일이 벌어지는가</p>
+
+        <div class="grid grid-cols-2 gap-8 items-start">
+          <!-- 수동 배포의 고통 -->
+          <div>
+            <h3 class="font-bold text-slate-400 text-sm uppercase tracking-widest mb-4">수동 배포 시나리오</h3>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <span class="text-red-400 text-lg mt-0.5">✗</span>
+                <div>
+                  <p class="font-semibold text-sm">macOS 머신에서 pkg 빌드</p>
+                  <p class="text-slate-400 text-xs">개발자 로컬 환경에 의존 — "내 컴에서는 됐는데?"</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-red-400 text-lg mt-0.5">✗</span>
+                <div>
+                  <p class="font-semibold text-sm">Windows VM 부팅 → msi 빌드</p>
+                  <p class="text-slate-400 text-xs">VM 셋업 시간 + 버전 불일치 위험</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-red-400 text-lg mt-0.5">✗</span>
+                <div>
+                  <p class="font-semibold text-sm">Ubuntu 서버 접속 → deb 빌드</p>
+                  <p class="text-slate-400 text-xs">같은 과정을 릴리즈마다 반복</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-red-400 text-lg mt-0.5">✗</span>
+                <div>
+                  <p class="font-semibold text-sm">파일 3개 GitHub에 수동 업로드</p>
+                  <p class="text-slate-400 text-xs">실수로 하나 빠뜨리거나 이름 오타</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CI/CD 이후 -->
+          <div>
+            <h3 class="font-bold text-sky-500 text-sm uppercase tracking-widest mb-4">CI/CD 이후</h3>
+            <div class="space-y-3 mb-6">
+              <div class="flex items-start gap-3">
+                <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                <div>
+                  <p class="font-semibold text-sm"><code class="bg-slate-100 px-1 rounded">git tag v1.0.0 &amp;&amp; git push --tags</code></p>
+                  <p class="text-slate-400 text-xs">개발자가 해야 할 일은 이것뿐</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                <div>
+                  <p class="font-semibold text-sm">3개 OS 병렬 빌드 자동 실행</p>
+                  <p class="text-slate-400 text-xs">항상 같은 환경, 항상 같은 결과</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-emerald-500 text-lg mt-0.5">✓</span>
+                <div>
+                  <p class="font-semibold text-sm">GitHub Release에 3개 인스톨러 자동 첨부</p>
+                  <p class="text-slate-400 text-xs">실수 없음, 기다림만 있음</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-sky-50 border border-sky-200 rounded-xl p-4">
+              <p class="text-sky-700 font-bold text-sm mb-1">CI vs CD</p>
+              <div class="text-xs text-sky-700 space-y-1">
+                <p><strong>CI</strong>(지속적 통합) — 코드 변경마다 자동 빌드·검증</p>
+                <p><strong>CD</strong>(지속적 배포) — 검증된 빌드를 자동으로 사용자에게 전달</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         3. 파이프라인 전체 구조 설계
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-slate-50 text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-violet-100 text-violet-700">② 파이프라인 설계</span>
+        <h2 class="text-4xl font-black mb-2">전체 구조 먼저 잡아라</h2>
+        <p class="text-slate-500 mb-8">구현 전에 Job을 어떻게 나눌지 결정하는 것이 핵심</p>
+
+        <!-- 파이프라인 다이어그램 -->
+        <div class="card mb-6 bg-slate-900 text-slate-300">
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">.github/workflows/release.yml 구조</p>
+          <div class="flex items-start gap-6">
+            <!-- 트리거 -->
+            <div class="text-center">
+              <div class="bg-slate-700 rounded-xl px-4 py-3 text-xs font-mono mb-2">
+                <div class="text-amber-400 font-bold mb-1">on:</div>
+                <div class="text-slate-300">push:</div>
+                <div class="text-slate-300">&nbsp;&nbsp;tags: ['v*']</div>
+              </div>
+              <p class="text-xs text-slate-500">Trigger</p>
+            </div>
+
+            <div class="text-slate-500 text-xl mt-4">→</div>
+
+            <!-- build job -->
+            <div class="text-center flex-1">
+              <div class="bg-violet-900/50 border border-violet-500/30 rounded-xl px-4 py-3 text-xs mb-2">
+                <div class="text-violet-300 font-bold mb-2">job: build</div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="bg-slate-800 rounded-lg p-2">
+                    <div class="text-sky-400 text-xs">🍎 macos-15</div>
+                    <div class="text-slate-400 text-xs">→ .pkg</div>
+                  </div>
+                  <div class="bg-slate-800 rounded-lg p-2">
+                    <div class="text-blue-400 text-xs">🪟 windows-2025</div>
+                    <div class="text-slate-400 text-xs">→ .msi</div>
+                  </div>
+                  <div class="bg-slate-800 rounded-lg p-2">
+                    <div class="text-orange-400 text-xs">🐧 ubuntu-24.04</div>
+                    <div class="text-slate-400 text-xs">→ .deb</div>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-500">Matrix (3개 병렬)</p>
+            </div>
+
+            <div class="text-slate-500 text-xl mt-4">→</div>
+
+            <!-- release job -->
+            <div class="text-center">
+              <div class="bg-emerald-900/50 border border-emerald-500/30 rounded-xl px-4 py-3 text-xs mb-2">
+                <div class="text-emerald-300 font-bold mb-1">job: release</div>
+                <div class="text-slate-400 text-xs">needs: build</div>
+                <div class="text-slate-400 text-xs mt-1">download-artifact</div>
+                <div class="text-slate-400 text-xs">action-gh-release</div>
+              </div>
+              <p class="text-xs text-slate-500">Release (순차)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- GitHub Actions 개념 -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="card">
+            <div class="text-2xl mb-2">📋</div>
+            <p class="font-bold text-sm">Workflow</p>
+            <p class="text-slate-400 text-xs mt-1">yml 파일 하나 = 워크플로 하나. 여러 Job을 포함.</p>
+          </div>
+          <div class="card">
+            <div class="text-2xl mb-2">🎯</div>
+            <p class="font-bold text-sm">Trigger</p>
+            <p class="text-slate-400 text-xs mt-1"><code>on: push tags: ['v*']</code><br/>태그 push 시에만 실행</p>
+          </div>
+          <div class="card">
+            <div class="text-2xl mb-2">📦</div>
+            <p class="font-bold text-sm">Job</p>
+            <p class="text-slate-400 text-xs mt-1">독립 VM에서 실행. 기본은 병렬. <code>needs:</code>로 순서 지정.</p>
+          </div>
+          <div class="card">
+            <div class="text-2xl mb-2">🔧</div>
+            <p class="font-bold text-sm">Step</p>
+            <p class="text-slate-400 text-xs mt-1">Action(<code>uses:</code>) 또는 shell 명령(<code>run:</code>)</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         4. STEP 1 — Trigger 설정
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-white text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-amber-100 text-amber-700">③ 단계별 구현 · Step 1</span>
+        <h2 class="text-4xl font-black mb-2">Trigger — 언제 실행할 것인가</h2>
+        <p class="text-slate-500 mb-8">릴리즈 파이프라인은 <strong>버전 태그</strong>를 트리거로 삼는다</p>
+
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <div class="code mb-4">
+<span class="text-slate-500"># 태그 push 시에만 실행 (v1.0.0, v2.3.1 …)</span>
+<span class="text-sky-400">on</span>:
+  <span class="text-sky-400">push</span>:
+    <span class="text-sky-400">tags</span>:
+      - <span class="text-amber-300">'v*'</span>
+
+<span class="text-sky-400">permissions</span>:
+  <span class="text-amber-300">contents</span>: write
+  <span class="text-slate-500"># ← Release 생성에 반드시 필요</span></div>
+
+            <div class="warn mb-3">
+              <strong>⚠️ permissions 빠뜨리면</strong><br/>
+              <code>Resource not accessible by integration</code> — GitHub Release 생성 단계에서 403 오류 발생. Workflow 레벨 또는 release Job 레벨에 선언.
+            </div>
+          </div>
+
+          <div>
+            <h3 class="font-bold mb-3 text-slate-600 text-sm uppercase tracking-wide">태그에서 버전 추출</h3>
+            <div class="code mb-4">
+<span class="text-slate-500"># v1.2.3 → 1.2.3</span>
+- name: Extract version
+  id: <span class="text-sky-400">version</span>
+  shell: bash
+  run: |
+    echo "VERSION=<span class="text-amber-300">${GITHUB_REF_NAME#v}</span>" \
+      >> $GITHUB_OUTPUT
+
+<span class="text-slate-500"># 이후 단계에서 참조</span>
+<span class="text-green-300">${{ steps.version.outputs.VERSION }}</span></div>
+
+            <div class="tip">
+              <strong>💡 버전을 build.gradle에 하드코딩하지 말 것</strong><br/>
+              Gradle <code>-Pversion=</code> 플래그로 주입하면 소스 코드 수정 없이 버전 관리 가능.
+              <code class="block mt-1">./gradlew jpackageInstaller -Pversion=1.2.3</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         5. STEP 2 — Matrix 전략
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-slate-50 text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-amber-100 text-amber-700">③ 단계별 구현 · Step 2</span>
+        <h2 class="text-4xl font-black mb-2">Matrix — 3개 OS를 단 한 번에</h2>
+        <p class="text-slate-500 mb-6">반복되는 Job 대신 <code class="bg-slate-200 px-1.5 rounded">strategy.matrix</code>로 조합 폭발을 활용</p>
+
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <div class="code mb-4">
+<span class="text-sky-400">jobs</span>:
+  <span class="text-sky-400">build</span>:
+    <span class="text-sky-400">strategy</span>:
+      <span class="text-sky-400">matrix</span>:
+        <span class="text-sky-400">include</span>:
+          - os: <span class="text-amber-300">macos-15</span>
+            ext: pkg
+            os-name: macos
+          - os: <span class="text-amber-300">windows-2025</span>
+            ext: msi
+            os-name: windows
+          - os: <span class="text-amber-300">ubuntu-24.04</span>
+            ext: deb
+            os-name: ubuntu
+
+    <span class="text-sky-400">runs-on</span>: $&#123;&#123; matrix.os &#125;&#125;
+
+    steps:
+      - name: Build installer
+        run: |
+          ./gradlew jpackageInstaller \
+            -Pversion=$&#123;&#123; steps.version.outputs.VERSION &#125;&#125;</div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="card border-l-4 border-sky-400">
+              <div class="flex items-center gap-2 mb-2"><span class="text-xl">🍎</span><span class="font-bold">macOS 15</span><span class="pill-sky ml-2">pkg</span></div>
+              <p class="text-slate-500 text-xs"><code>dmg</code>는 postinstall 스크립트 미지원 → PATH 등록 불가. 반드시 <strong>pkg 타입</strong> 사용.</p>
+            </div>
+            <div class="card border-l-4 border-blue-400">
+              <div class="flex items-center gap-2 mb-2"><span class="text-xl">🪟</span><span class="font-bold">Windows 2025</span><span class="pill-sky ml-2">msi</span></div>
+              <p class="text-slate-500 text-xs">CLI 앱은 <code>--win-console</code> 옵션 필수. 없으면 &ldquo;failed to launch JVM&rdquo; 오류.</p>
+            </div>
+            <div class="card border-l-4 border-orange-400">
+              <div class="flex items-center gap-2 mb-2"><span class="text-xl">🐧</span><span class="font-bold">Ubuntu 24.04</span><span class="pill-sky ml-2">deb</span></div>
+              <p class="text-slate-500 text-xs">postinst 스크립트로 <code>/usr/local/bin</code>에 symlink 생성.</p>
+            </div>
+
+            <div class="warn">
+              <strong>⚠️ latest 사용 금지</strong> — <code>ubuntu-latest</code>는 버전이 교체되면 빌드 깨짐. 항상 <code>ubuntu-24.04</code>처럼 명시.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         6. STEP 3 — 빌드 환경 준비
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-white text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-amber-100 text-amber-700">③ 단계별 구현 · Step 3</span>
+        <h2 class="text-4xl font-black mb-2">빌드 환경 준비</h2>
+        <p class="text-slate-500 mb-8">Java 셋업부터 jpackage 호출까지 — 함정이 2개 있다</p>
+
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <h3 class="font-bold mb-3">Workflow Steps 순서</h3>
+            <div class="space-y-2 mb-5">
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm">
+                <span class="step">1</span>
+                <div><code class="text-xs">actions/checkout@v6</code></div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm">
+                <span class="step">2</span>
+                <div><code class="text-xs">actions/setup-java@v5</code> (Zulu 25)</div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm">
+                <span class="step">3</span>
+                <div><code class="text-xs">chmod +x gradlew</code> (Unix only)</div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm">
+                <span class="step">4</span>
+                <div><code class="text-xs">./gradlew jpackageInstaller -Pversion=…</code></div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm">
+                <span class="step">5</span>
+                <div><code class="text-xs">actions/upload-artifact</code></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- 함정 1 -->
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+              <p class="font-bold text-red-700 text-sm mb-2">🔥 함정 1 — Gradle Wrapper가 없다</p>
+              <p class="text-red-600 text-xs mb-2">Spring Initializr 기본 <code>.gitignore</code>에 <code>gradlew</code>, <code>gradle/</code>이 포함되어 있음 → CI에서 <code>No such file or directory</code></p>
+              <div class="code bg-slate-800 text-red-300 text-xs mb-2">./gradlew: No such file or directory</div>
+              <p class="text-red-700 text-xs font-bold">해결: .gitignore에서 Gradle Wrapper 항목 제거 후 커밋</p>
+            </div>
+
+            <!-- 함정 2 -->
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+              <p class="font-bold text-red-700 text-sm mb-2">🔥 함정 2 — jpackage 경로 하드코딩</p>
+              <div class="code bg-slate-800 text-xs mb-2">
+<span class="text-red-400">// 나쁜 예</span>
+def jpackage = '/Library/Java/.../jpackage'
+
+<span class="text-green-400">// 좋은 예</span>
+def javaHome = System.getenv('JAVA_HOME')
+def jpackage = "${javaHome}/bin/jpackage"</div>
+              <p class="text-red-700 text-xs font-bold">로컬 경로는 CI 환경에 존재하지 않음</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         7. STEP 4 — 플랫폼별 PATH 등록
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-slate-50 text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-amber-100 text-amber-700">③ 단계별 구현 · Step 4</span>
+        <h2 class="text-4xl font-black mb-2">플랫폼별 PATH 자동 등록</h2>
+        <p class="text-slate-500 mb-6">jpackage 기본 설치로는 PATH에 아무것도 추가하지 않는다</p>
+
+        <div class="grid grid-cols-3 gap-5">
+          <!-- macOS -->
+          <div class="card border-t-4 border-sky-500">
+            <h3 class="font-bold mb-3 flex items-center gap-2"><span class="text-xl">🍎</span>macOS · pkg</h3>
+            <p class="text-slate-500 text-xs mb-3"><code>src/jpackage/postinstall</code> 스크립트 → <code>--resource-dir</code>로 포함</p>
+            <div class="code text-xs">
+<span class="text-slate-500">#!/bin/bash</span>
+ln -sf \
+  /Applications/nfdtonfc.app\
+/Contents/MacOS/nfdtonfc \
+  /usr/local/bin/nfdtonfc</div>
+            <div class="mt-3 warn text-xs">dmg 타입은 이 스크립트를 지원하지 않아 pkg 필수</div>
+          </div>
+
+          <!-- Windows -->
+          <div class="card border-t-4 border-blue-500">
+            <h3 class="font-bold mb-3 flex items-center gap-2"><span class="text-xl">🪟</span>Windows · msi</h3>
+            <p class="text-slate-500 text-xs mb-3">MSI 데이터베이스에 직접 패치 (COM 자동화)</p>
+            <div class="code text-xs">
+<span class="text-slate-500"># patch-msi-path.ps1</span>
+<span class="text-slate-500"># Environment 테이블 생성</span>
+<span class="text-slate-500"># PATH 항목 삽입</span>
+<span class="text-slate-500"># WriteEnvironmentStrings</span>
+<span class="text-slate-500"># → InstallExecuteSequence</span>
+& src\windows\patch-msi-path.ps1 \
+  -MsiPath $msiPath</div>
+            <div class="mt-3 warn text-xs">PowerShell 인라인 YAML 작성 시 백틱 충돌 → 반드시 .ps1 파일로 분리</div>
+          </div>
+
+          <!-- Ubuntu -->
+          <div class="card border-t-4 border-orange-500">
+            <h3 class="font-bold mb-3 flex items-center gap-2"><span class="text-xl">🐧</span>Ubuntu · deb</h3>
+            <p class="text-slate-500 text-xs mb-3"><code>postinst</code> / <code>postrm</code> 스크립트로 symlink 관리</p>
+            <div class="code text-xs">
+<span class="text-slate-500"># postinst</span>
+ln -sf \
+  /opt/nfdtonfc/bin/nfdtonfc \
+  /usr/local/bin/nfdtonfc
+mandb -q
+
+<span class="text-slate-500"># postrm</span>
+rm -f /usr/local/bin/nfdtonfc</div>
+            <div class="mt-3 tip text-xs">man 페이지는 postinst에 heredoc으로 직접 임베드 (별도 파일은 jpackage 경로 문제 발생)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         8. STEP 5 — 아티팩트 수집 & Release 생성
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-white text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-amber-100 text-amber-700">③ 단계별 구현 · Step 5</span>
+        <h2 class="text-4xl font-black mb-2">아티팩트 수집 &amp; Release 자동 생성</h2>
+        <p class="text-slate-500 mb-8">3개 Job의 결과물을 한 곳에 모아 GitHub Release에 붙인다</p>
+
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <h3 class="font-bold mb-3 text-slate-600 text-sm uppercase tracking-wide">build job — 아티팩트 업로드</h3>
+            <div class="code mb-4">
+<span class="text-slate-500"># 각 OS에서 결과물 이름 통일</span>
+- name: Rename artifact
+  run: |
+    cp build/jpackage/nfdtonfc-${VERSION}.<span class="text-amber-300">pkg</span> \
+       nfdtonfc-v1.0.0-<span class="text-sky-400">macos</span>.pkg
+
+- uses: actions/upload-artifact@v7
+  with:
+    name: nfdtonfc-v1.0.0-macos.pkg
+    path: nfdtonfc-v1.0.0-macos.pkg</div>
+
+            <div class="tip">
+              <strong>💡 아티팩트 이름 규칙을 통일하라</strong><br/>
+              <code>nfdtonfc-{tag}-{os-name}.{ext}</code> 형태로 고정하면 release job에서 <code>artifacts/**/*</code> 글로브 하나로 모두 처리 가능.
+            </div>
+          </div>
+
+          <div>
+            <h3 class="font-bold mb-3 text-slate-600 text-sm uppercase tracking-wide">release job — Release 생성</h3>
+            <div class="code mb-4">
+<span class="text-sky-400">release</span>:
+  <span class="text-amber-300">needs</span>: build   <span class="text-slate-500"># build 완료 후 실행</span>
+  runs-on: ubuntu-24.04
+  steps:
+    - uses: actions/<span class="text-green-400">download-artifact</span>@v8
+      with:
+        path: artifacts  <span class="text-slate-500"># 3개 OS 결과물 모두</span>
+
+    - uses: softprops/<span class="text-green-400">action-gh-release</span>@v3
+      with:
+        files: artifacts/**/*
+      env:
+        GITHUB_TOKEN: $&#123;&#123; secrets.GITHUB_TOKEN &#125;&#125;</div>
+
+            <div class="warn">
+              <strong>⚠️ needs: build 빠뜨리면</strong> release job이 build와 동시에 실행되어 아티팩트가 없는 상태에서 Release 생성 시도 → 빈 릴리즈가 만들어짐
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         9. 플랫폼 특수 처리 — Windows 한글 인코딩
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12 bg-slate-50 text-slate-800">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-rose-100 text-rose-700">④ 실전 함정</span>
+        <h2 class="text-4xl font-black mb-2">Windows 한글이 <code class="text-rose-500">????</code>로 나온다</h2>
+        <p class="text-slate-500 mb-8">cmd/PowerShell 기본 코드페이지(CP949) — 단순한 방법은 모두 효과가 없다</p>
+
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <h3 class="font-bold text-slate-400 mb-4 text-sm uppercase tracking-wide">❌ 효과 없는 시도들</h3>
+            <div class="space-y-3">
+              <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <code class="text-red-600 text-xs">System.setOut(new PrintStream(System.out, true, UTF_8))</code>
+                <p class="text-red-500 text-xs mt-2">JVM 내부 스트림만 바꿔도 <strong>콘솔 코드페이지는 그대로</strong></p>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <code class="text-red-600 text-xs">Runtime.getRuntime().exec("chcp 65001")</code>
+                <p class="text-red-500 text-xs mt-2"><strong>자식 프로세스</strong>에서 실행 → 현재 JVM 프로세스에 영향 없음</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="font-bold text-emerald-600 mb-4 text-sm uppercase tracking-wide">✅ Java 25 FFM API로 kernel32 직접 호출</h3>
+            <div class="code mb-4">
+Linker linker = Linker.nativeLinker();
+SymbolLookup kernel32 = SymbolLookup
+  .libraryLookup(<span class="text-amber-300">"kernel32"</span>, Arena.global());
+
+MethodHandle setCP = linker.downcallHandle(
+  kernel32.find(<span class="text-green-400">"SetConsoleOutputCP"</span>).get(),
+  FunctionDescriptor.of(
+    ValueLayout.JAVA_INT,
+    ValueLayout.JAVA_INT));
+
+<span class="text-sky-400">setCP.invoke(65001);</span>  <span class="text-slate-500">// UTF-8</span></div>
+
+            <div class="tip">
+              <strong>💡 FFM(Foreign Function &amp; Memory) API</strong><br/>
+              Java 22부터 정식 도입. JNI 없이 네이티브 함수를 직접 호출.
+              jpackage JVM 옵션에 <code>--enable-native-access=ALL-UNNAMED</code> 필수.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         10. 플랫폼 특수 처리 — macOS NFD 함정
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12
+                    bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+      <div class="max-w-5xl mx-auto w-full">
+        <span class="tag bg-rose-500/20 text-rose-300">④ 실전 함정 — 핵심</span>
+        <h2 class="text-4xl font-black mb-2">macOS APFS가 rename을 무시한다</h2>
+        <p class="text-slate-400 mb-6">nfdtonfc의 핵심 기능 구현에서 만난 4단계 연쇄 함정</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="dark-card">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">1</span>
+              <span class="font-bold text-sm">Files.move()가 경로를 NFD로 변환</span>
+            </div>
+            <p class="text-slate-400 text-xs mb-2">macOS VFS 레이어를 통과하면 NFC 경로가 NFD로 바뀜</p>
+            <div class="bg-slate-900 rounded-lg p-2 text-xs font-mono text-green-300">
+              <span class="text-slate-500">→ FFM으로 rename() syscall 직접 호출</span><br/>
+              SymbolLookup.libraryLookup(<span class="text-amber-300">"libSystem.B.dylib"</span>, ...)
+            </div>
+          </div>
+          <div class="dark-card">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">2</span>
+              <span class="font-bold text-sm">APFS: NFD→NFC rename이 no-op</span>
+            </div>
+            <p class="text-slate-400 text-xs mb-2">APFS는 NFD와 NFC를 같은 파일로 인식 → 이름 변경 무시</p>
+            <div class="bg-slate-900 rounded-lg p-2 text-xs font-mono text-green-300">
+              <span class="text-slate-500">→ 2단계 rename으로 우회</span><br/>
+              rename(src, <span class="text-amber-300">tmp</span>)  <span class="text-slate-500">// NFD → ASCII</span><br/>
+              rename(<span class="text-amber-300">tmp</span>, nfc)  <span class="text-slate-500">// ASCII → NFC</span>
+            </div>
+          </div>
+          <div class="dark-card">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">3</span>
+              <span class="font-bold text-sm">Path.toString()이 다시 NFD로 변환</span>
+            </div>
+            <p class="text-slate-400 text-xs mb-2">macOS Path 구현이 내부적으로 NFD 변환</p>
+            <div class="bg-slate-900 rounded-lg p-2 text-xs font-mono text-green-300">
+              <span class="text-red-400">// 나쁜 예: target.toString()</span><br/>
+              <span class="text-green-400">// 좋은 예: 문자열 직접 조립</span><br/>
+              (parentStr + nfcName).getBytes(UTF_8)
+            </div>
+          </div>
+          <div class="dark-card">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">4</span>
+              <span class="font-bold text-sm">pkg JRE가 파일명을 NFC로 반환</span>
+            </div>
+            <p class="text-slate-400 text-xs mb-2">Files.walk() 결과가 NFC → 변환 필요 없다고 오판하여 skip</p>
+            <div class="bg-slate-900 rounded-lg p-2 text-xs font-mono text-green-300">
+              <span class="text-slate-500">→ 문자열 비교 대신 바이트 비교</span><br/>
+              byte[] nfc = name.getBytes(UTF_8);<br/>
+              byte[] nfd = NFD(name).getBytes(UTF_8);<br/>
+              Arrays.<span class="text-amber-300">equals</span>(nfc, nfd)
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         11. 완성된 Workflow 한눈에
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 bg-white text-slate-800">
+      <div class="max-w-6xl mx-auto w-full">
+        <span class="tag bg-emerald-100 text-emerald-700">완성</span>
+        <h2 class="text-2xl font-black mb-1">완성된 Workflow 한눈에</h2>
+        <p class="text-slate-500 text-sm mb-3">YAML 한 파일이 3개 OS 빌드·배포를 모두 처리한다 — build / release 두 Job 구조</p>
+
+        <!-- YAML 좌우 2열 -->
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="code" style="font-size:11px; line-height:1.55">
+<span class="text-amber-400">name</span>: Release
+<span class="text-amber-400">on</span>: { push: { tags: [<span class="text-green-300">'v*'</span>] } }
+<span class="text-amber-400">permissions</span>: { contents: write }
+
+<span class="text-amber-400">jobs</span>:
+  <span class="text-sky-300">build</span>:
+    strategy:
+      matrix:
+        include:
+          - os: <span class="text-amber-300">macos-15</span>      ext: pkg  os-name: macos
+          - os: <span class="text-amber-300">windows-2025</span>  ext: msi  os-name: windows
+          - os: <span class="text-amber-300">ubuntu-24.04</span>  ext: deb  os-name: ubuntu
+    runs-on: $&#123;&#123; matrix.os &#125;&#125;
+    steps:
+      - uses: actions/checkout@v6
+      - id: version
+        run: echo "VERSION=${GITHUB_REF_NAME<span class="text-amber-300">#v</span>}" >> $GITHUB_OUTPUT
+      - uses: actions/setup-java@v5
+        with: { java-version: <span class="text-green-300">'25'</span>, distribution: <span class="text-green-300">'zulu'</span> }
+      - name: Build installer
+        run: ./gradlew jpackageInstaller <span class="text-amber-300">-Pversion=…</span>
+      - name: Patch MSI PATH
+        if: runner.os == 'Windows'
+        run: src\windows\patch-msi-path.ps1 …
+      - uses: actions/upload-artifact@v7
+        with: { name: nfdtonfc-…, path: nfdtonfc-… }</div>
+
+          <div class="code" style="font-size:11px; line-height:1.55">
+<span class="text-emerald-300">release</span>:
+    <span class="text-amber-300">needs</span>: build   <span class="text-slate-500"># build 완료 후 실행</span>
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v8
+        with: { path: artifacts }
+
+      - uses: softprops/action-gh-release@v3
+        with: { files: <span class="text-amber-300">artifacts/**/*</span> }
+        env:
+          GITHUB_TOKEN: $&#123;&#123; secrets.GITHUB_TOKEN &#125;&#125;
+
+<span class="text-slate-500"># download-artifact가 3개 OS 결과물을</span>
+<span class="text-slate-500"># artifacts/ 폴더 하나로 모으고</span>
+<span class="text-slate-500"># action-gh-release가 글로브 패턴으로</span>
+<span class="text-slate-500"># 한 번에 Release에 첨부한다</span>
+
+
+
+</div>
+        </div>
+
+        <!-- 체크포인트 한 줄 -->
+        <div class="grid grid-cols-4 gap-2" style="font-size:10.5px">
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span><code class="bg-slate-200 px-1 rounded">contents: write</code> 권한 선언</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span>Runner 버전 명시 (latest 금지)</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span>Gradle Wrapper Git 포함</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span><code class="bg-slate-200 px-1 rounded">JAVA_HOME</code> 동적 참조</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span>macOS pkg / Windows --win-console</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span>PowerShell은 .ps1 분리</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span><code class="bg-slate-200 px-1 rounded">needs: build</code> 선언</span>
+          </div>
+          <div class="bg-slate-50 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
+            <span class="text-emerald-500">✓</span><span>FFM enable-native-access</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         12. 마무리
+    ═══════════════════════════════════════════════════ -->
+    <section class="slide flex-shrink-0 w-screen h-full flex flex-col justify-center px-16 py-12
+                    bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white">
+      <div class="max-w-5xl mx-auto w-full">
+        <p class="text-sky-400 font-mono text-sm tracking-widest uppercase mb-6">Summary</p>
+        <h2 class="text-5xl font-black mb-6">
+          한 번 만들면<br/>
+          <span class="text-sky-400">태그만 달아도 배포</span>
+        </h2>
+
+        <div class="grid grid-cols-3 gap-5 mb-10">
+          <div class="dark-card">
+            <div class="text-2xl mb-2">🗺️</div>
+            <p class="font-bold">구조를 먼저 설계하라</p>
+            <p class="text-slate-400 text-sm mt-1">Job 분리 (build / release), Matrix, needs 의존성을 코딩 전에 그려라</p>
+          </div>
+          <div class="dark-card">
+            <div class="text-2xl mb-2">🔒</div>
+            <p class="font-bold">환경을 고정하라</p>
+            <p class="text-slate-400 text-sm mt-1">Runner 버전 명시, jpackage JAVA_HOME 동적 참조, 버전 태그 주입</p>
+          </div>
+          <div class="dark-card">
+            <div class="text-2xl mb-2">📝</div>
+            <p class="font-bold">함정을 기록하라</p>
+            <p class="text-slate-400 text-sm mt-1">lessons-learned.md 한 장이 다음 프로젝트 셋업 시간을 반으로 줄인다</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-white/10 rounded-2xl px-8 py-5 inline-block font-mono text-sm">
+          <span class="text-slate-500">$ </span>
+          <span class="text-green-400">git tag v1.0.0 &amp;&amp; git push --tags</span>
+          <span class="text-sky-400 ml-3">▌</span>
+          <div class="text-slate-500 text-xs mt-2 font-sans">→ 약 5분 뒤 GitHub Releases에 pkg / msi / deb 자동 첨부</div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /#deck -->
+
+
+  <!-- 하단 네비게이션 -->
+  <div class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+    <div id="dots" class="flex gap-1.5"></div>
+    <span id="counter" class="text-white/40 text-xs font-mono"></span>
+  </div>
+
+  <!-- 상단 진행 바 -->
+  <div class="fixed top-0 left-0 right-0 h-0.5 bg-white/10 z-50">
+    <div id="progress" class="h-full bg-sky-400 transition-all duration-500 ease-out"></div>
+  </div>
+
+  <script>
+    const deck    = document.getElementById('deck');
+    const counter = document.getElementById('counter');
+    const dotsEl  = document.getElementById('dots');
+    const progress= document.getElementById('progress');
+    const slides  = document.querySelectorAll('.slide');
+    const total   = slides.length;
+    let cur = 0;
+
+    const dots = Array.from({ length: total }, (_, i) => {
+      const d = document.createElement('button');
+      d.addEventListener('click', () => go(i));
+      dotsEl.appendChild(d);
+      return d;
+    });
+
+    function go(n) {
+      cur = Math.max(0, Math.min(total - 1, n));
+      deck.style.transform = `translateX(-${cur * 100}vw)`;
+
+      counter.textContent = `${cur + 1} / ${total}`;
+      progress.style.width = `${((cur + 1) / total) * 100}%`;
+      dots.forEach((d, i) => {
+        d.className = i === cur
+          ? 'w-5 h-1.5 rounded-full bg-white transition-all duration-300'
+          : 'w-1.5 h-1.5 rounded-full bg-white/30 transition-all duration-300';
+      });
+    }
+
+    document.addEventListener('keydown', e => {
+      if (['ArrowRight', 'ArrowDown', ' '].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+      if (['ArrowLeft',  'ArrowUp'       ].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+      if (e.key === 'Home') go(0);
+      if (e.key === 'End')  go(total - 1);
+    });
+
+    let tx = 0;
+    document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+    document.addEventListener('touchend',   e => {
+      const dx = tx - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 50) go(dx > 0 ? cur + 1 : cur - 1);
+    });
+
+    go(0);
+  </script>
+</body>
+</html>
