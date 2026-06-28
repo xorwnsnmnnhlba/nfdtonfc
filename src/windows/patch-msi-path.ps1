@@ -52,6 +52,14 @@ try {
     Write-Host "RemoveEnvironmentStrings already in sequence."
 }
 
+# Registry 테이블 생성
+try {
+    ExecSql "CREATE TABLE Registry (Registry CHAR(72) NOT NULL, Root SHORT NOT NULL, Key CHAR(255) NOT NULL LOCALIZABLE, Name CHAR(255) LOCALIZABLE, Value CHAR(0) LOCALIZABLE, Component_ CHAR(72) NOT NULL PRIMARY KEY Registry)"
+    Write-Host "Registry table created."
+} catch {
+    Write-Host "Registry table already exists."
+}
+
 # 탐색기 우클릭 메뉴(컨텍스트 메뉴) 등록 - 파일/디렉터리, 다중 선택 지원
 $menuLabel = "NFC로 변환"
 $command = '"[INSTALLDIR]nfdtonfc.exe" "%1"'
