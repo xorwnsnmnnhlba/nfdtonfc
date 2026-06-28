@@ -54,7 +54,7 @@ try {
 
 # Registry 테이블 생성
 try {
-    ExecSql "CREATE TABLE Registry (Registry CHAR(72) NOT NULL, Root SHORT NOT NULL, Key CHAR(255) NOT NULL LOCALIZABLE, Name CHAR(255) LOCALIZABLE, Value CHAR(0) LOCALIZABLE, Component_ CHAR(72) NOT NULL PRIMARY KEY Registry)"
+    ExecSql "CREATE TABLE Registry (Registry CHAR(72) NOT NULL, Root SHORT NOT NULL, ``Key`` CHAR(255) NOT NULL LOCALIZABLE, Name CHAR(255) LOCALIZABLE, Value CHAR(0) LOCALIZABLE, Component_ CHAR(72) NOT NULL PRIMARY KEY Registry)"
     Write-Host "Registry table created."
 } catch {
     Write-Host "Registry table already exists."
@@ -73,7 +73,7 @@ $contextMenuRows = @(
 )
 
 foreach ($row in $contextMenuRows) {
-    ExecSql "INSERT INTO Registry (Registry, Root, Key, Name, Value, Component_) VALUES ('$($row.Id)', 1, '$($row.Key)', '$($row.Name)', '$($row.Value)', '$component')"
+    ExecSql "INSERT INTO Registry (Registry, Root, ``Key``, Name, Value, Component_) VALUES ('$($row.Id)', 1, '$($row.Key)', '$($row.Name)', '$($row.Value)', '$component')"
 }
 Write-Host "Context menu registry entries inserted."
 
