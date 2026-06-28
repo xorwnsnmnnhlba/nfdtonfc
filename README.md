@@ -58,6 +58,14 @@ nfdtonfc dir1 dir2 file.txt
 | `--help` | 도움말 출력 후 종료 |
 | `--version` | 버전 출력 후 종료 |
 
+## 우클릭 메뉴(컨텍스트 메뉴)
+
+설치 시 파일 탐색기/Finder/파일 관리자에 "NFC로 변환" 메뉴가 자동으로 등록됩니다. 파일과 디렉터리, 다중 선택 모두 지원합니다.
+
+- **macOS**: Finder에서 파일/폴더를 선택한 뒤 우클릭 → **빠른 동작 > NFC로 변환**
+- **Windows**: 탐색기에서 파일/폴더를 선택한 뒤 우클릭 → **NFC로 변환**
+- **Ubuntu(Nautilus/GNOME Files)**: 파일/폴더를 선택한 뒤 우클릭 → **스크립트 > NFC로 변환**
+
 ## 빌드
 
 JDK 25 (Zulu) 가 필요합니다.
@@ -78,6 +86,11 @@ JDK 25 (Zulu) 가 필요합니다.
 ### macOS
 
 `/Applications`에서 `nfdtonfc`를 휴지통으로 이동합니다.
+
+우클릭 메뉴(`/Library/Services/ConvertToNFC.workflow`)는 별도로 삭제해야 합니다:
+```bash
+sudo rm -rf "/Library/Services/ConvertToNFC.workflow"
+```
 
 ### Windows
 

@@ -52,5 +52,22 @@ try {
     Write-Host "RemoveEnvironmentStrings already in sequence."
 }
 
+# 탐색기 우클릭 메뉴(컨텍스트 메뉴) 등록 - 파일/디렉터리, 다중 선택 지원
+$menuLabel = "NFC로 변환"
+$command = '"[INSTALLDIR]nfdtonfc.exe" "%1"'
+$contextMenuRows = @(
+    @{ Id = 'nfdtonfc_ctx_file_label'; Key = 'Software\Classes\*\shell\nfdtonfc'; Name = ''; Value = $menuLabel },
+    @{ Id = 'nfdtonfc_ctx_file_multi'; Key = 'Software\Classes\*\shell\nfdtonfc'; Name = 'MultiSelectModel'; Value = 'Document' },
+    @{ Id = 'nfdtonfc_ctx_file_cmd'; Key = 'Software\Classes\*\shell\nfdtonfc\command'; Name = ''; Value = $command },
+    @{ Id = 'nfdtonfc_ctx_dir_label'; Key = 'Software\Classes\Directory\shell\nfdtonfc'; Name = ''; Value = $menuLabel },
+    @{ Id = 'nfdtonfc_ctx_dir_multi'; Key = 'Software\Classes\Directory\shell\nfdtonfc'; Name = 'MultiSelectModel'; Value = 'Document' },
+    @{ Id = 'nfdtonfc_ctx_dir_cmd'; Key = 'Software\Classes\Directory\shell\nfdtonfc\command'; Name = ''; Value = $command }
+)
+
+foreach ($row in $contextMenuRows) {
+    ExecSql "INSERT INTO Registry (Registry, Root, Key, Name, Value, Component_) VALUES ('$($row.Id)', 1, '$($row.Key)', '$($row.Name)', '$($row.Value)', '$component')"
+}
+Write-Host "Context menu registry entries inserted."
+
 $db.GetType().InvokeMember("Commit", "InvokeMethod", $null, $db, $null)
 Write-Host "MSI patched successfully."

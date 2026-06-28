@@ -2,3 +2,8 @@
 rm -f /usr/local/bin/nfdtonfc
 rm -f /usr/local/share/man/man1/nfdtonfc.1.gz
 mandb -q
+
+getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 { print $6 }' | while read -r home; do
+    rm -f "$home/.local/share/nautilus/scripts/NFC로 변환"
+done
+rm -f "/etc/skel/.local/share/nautilus/scripts/NFC로 변환"

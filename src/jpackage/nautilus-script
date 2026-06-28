@@ -1,0 +1,14 @@
+#!/bin/bash
+# Nautilus(GNOME Files) 우클릭 메뉴 스크립트: 선택한 파일/디렉터리를 NFC로 변환합니다.
+
+if [ -n "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" ]; then
+    mapfile -t targets <<< "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"
+else
+    targets=("$@")
+fi
+
+/usr/local/bin/nfdtonfc "${targets[@]}"
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "nfdtonfc" "NFC 변환이 완료되었습니다."
+fi

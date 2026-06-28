@@ -1,2 +1,43 @@
 #!/bin/bash
 ln -sf /Applications/nfdtonfc.app/Contents/MacOS/nfdtonfc /usr/local/bin/nfdtonfc
+
+# Finder 우클릭 메뉴(서비스) 등록 - 선택한 파일/폴더를 NFC로 변환
+# ConvertToNFC.workflow를 base64로 인코딩해 두었다가(src/macos) 설치 시점에 풀어서
+# /Library/Services에 배치한다. (앱 번들에 직접 포함하면 codesign 무결성 검증이 깨짐)
+mkdir -p /Library/Services
+rm -rf "/Library/Services/ConvertToNFC.workflow"
+base64 -d <<'NFDTONFC_WORKFLOW_B64' | tar xz -C /Library/Services
+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
+AhUKod4AQAAA
+NFDTONFC_WORKFLOW_B64
+/System/Library/CoreServices/pbs -flush
